@@ -1,0 +1,23 @@
+//tokens
+<Begin> ::= begin <Statements> end
+<Statements> ::= <Statement> <Statements> | <Statement>
+<Statement> ::= int <VAR> | string <VAR> | int <VAR> := <N> | string <VAR> ':=' '"' <Expressao> '"' | printf <VAR> | printf " <Expressao> " | assign <VAR> := <Expressao> | assign <VAR> ':=' '"' <Expressao> '"' | while <Expressao> do <Statements> end | if <Expressao> then <Statements> end| if <Expressao> then <Statements> else <Statements> end
+
+<Expressao> ::= <Expressao> <CMP> <OP> | <OP>
+
+<OP> ::= <OP> <ARITH> <NegadoExp> | <NegadoExp>
+
+<NegadoExp> ::= - <Valor> | <Valor>
+
+<Valor> ::= <VAR> | <N>
+
+//arith
+<ARITH> ::= +| -| &| * | /
+//cmp
+<CMP> ::= > | < | <= | >= | == | !=
+//numeros
+<N> ::= 0 <NF> | 1 <NF> | 2 <NF> | 3 <NF> | 4 <NF> | 5 <NF> | 6 <NF> | 7 <NF> | 8 <NF> | 9 <NF>
+<NF> ::= 0 <NF> | 1 <NF> | 2 <NF> | 3 <NF> | 4 <NF> | 5 <NF> | 6 <NF> | 7 <NF> | 8 <NF> | 9 <NF> | <>
+//variaveis
+<VAR> ::= a <VF> | b <VF>| c <VF> | d <VF> | e <VF> | f <VF> | g <VF> | h <VF> | i <VF> | j <VF> | l <VF> | m <VF> | n <VF> | o <VF> | p <VF> | q <VF> | r <VF> | s <VF> | t <VF> | u <VF> | v <VF> | x <VF> | z <VF>    
+<VF> ::= a <VF> | b <VF>| c <VF> | d <VF> | e <VF> | f <VF> | g <VF> | h <VF> | i <VF> | j <VF> | l <VF> | m <VF> | n <VF> | o <VF> | p <VF> | q <VF> | r <VF> | s <VF> | t <VF> | u <VF> | v <VF> | x <VF> | z <VF> | <>
