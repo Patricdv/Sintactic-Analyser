@@ -1,7 +1,6 @@
 class AutomatonLine(object):
-	def __init__(self, composition = [], productions = {}):
+	def __init__(self, composition = []):
 		self.composition = composition
-		self.productions = productions
 
 class AutomatonFirstsSet(object):
     def __init__(self, firsts = []):
@@ -21,8 +20,9 @@ class ParsingTable(object):
         self.states = states
 
 # It's a set of non-Terminal with compositions and productions
-automaton = {}
-#Automaton.update({'A': 15})
+automaton = {}   # Automaton.update({'A': 15})
+noTerminals = [] # noTerminals.append('A')
+
 
 # It's a set of non-Terminal with first set
 automatonFirstsSet = {}
@@ -34,32 +34,33 @@ automatonFollowsSet = {}
 parsingTable = {}
 
 def makeGrammax(model):
-    for line in model:
-        line = line.replace("\r", "").replace("\n", "")
-        if "::=" not in line:
-            continue
+	for line in model:
+		line = line.replace("\r", "").replace("\n", "")
+		if "::=" not in line:
+			continue
 
-        line = line.split("::=")
+		line = line.split("::=")
 
-        lineAutomaton = line[0]
-        lineArguments = line[1].split("|")
-        print lineAutomaton
-        print lineArguments
-        print '---------------------------------------------------'
+		lineAutomaton = line[0]
+		lineCompositions = line[1].split("|")
+		noTerminals.append(lineAutomaton)
+		automaton.update({lineAutomaton: lineCompositions});
 
-def makeGrammaxFirst(model):
+def makeGrammaxFirst():
     print "making first"
 
-def makeGrammaxFollow(model):
+def makeGrammaxFollow():
     print "making follow"
 
-def makeValidItems(model):
-    print "making Valid Items"
+def makeValidItems():
+	# We'll asume that the first state is the beginning state
+	print automaton[noTerminals[0]]
+	print "making Valid Items"
 
-def makeGrammaxReductions(model):
+def makeGrammaxReductions():
     print "making grammax reductions"
 
-def makeGrammaxTransitions(model):
+def makeGrammaxTransitions():
     print "making grammax transitions"
 
 print "Open grammax File"
@@ -67,6 +68,7 @@ file = open("grammax", "r")
 model = file.readlines()
 
 makeGrammax(model)
+makeValidItems()
 
 file.close()
 
