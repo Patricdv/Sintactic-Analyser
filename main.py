@@ -2,6 +2,11 @@ class AutomatonLine(object):
 	def __init__(self, composition = []):
 		self.composition = composition
 
+class AutomatonArguments(object):
+	def __init__(self, composition = [], pointPosition = 0):
+		self.composition = composition
+		self.pointPosition = pointPosition
+
 class AutomatonFirstsSet(object):
     def __init__(self, firsts = []):
         self.firsts
@@ -34,6 +39,7 @@ automatonFollowsSet = {}
 parsingTable = {}
 
 def makeGrammax(model):
+	count = 0
 	for line in model:
 		line = line.replace("\r", "").replace("\n", "")
 		if "::=" not in line:
@@ -41,10 +47,20 @@ def makeGrammax(model):
 
 		line = line.split("::=")
 
-		lineAutomaton = line[0]
+		lineAutomaton = line[0].strip(" ")
 		lineCompositions = line[1].split("|")
+		arguments = []
+
+		if (count == 0):
+			noTerminals.append(lineAutomaton+'\'')
+			automaton.update({lineAutomaton+'\'': AutomatonArguments({1: lineAutomaton + ' $'}, 0)})
+			count += 1
+
+		for lineComposition in lineCompositions:
+			arguments.append(AutomatonArguments(lineComposition.split(" "), 0))
+
 		noTerminals.append(lineAutomaton)
-		automaton.update({lineAutomaton: lineCompositions});
+		automaton.update({lineAutomaton: arguments});
 
 def makeGrammaxFirst():
     print "making first"
@@ -53,9 +69,14 @@ def makeGrammaxFollow():
     print "making follow"
 
 def makeValidItems():
-	# We'll asume that the first state is the beginning state
-	print automaton[noTerminals[0]]
-	print "making Valid Items"
+	# We'll asume that the first state is the beginning state, so, we have to create the antecessor of the grammax
+	# print "making Valid Items"
+
+	# automaton[noTerminals[0]][0] = "." + automaton[noTerminals[0]][0].strip(" ")
+	for noTerminal in noTerminals:
+		print (noTerminal + ' ::= '),
+		print automaton[noTerminal]
+
 
 def makeGrammaxReductions():
     print "making grammax reductions"
