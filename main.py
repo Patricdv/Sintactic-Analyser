@@ -3,9 +3,10 @@ class AutomatonLine(object):
 		self.composition = composition
 
 class AutomatonArguments(object):
-	def __init__(self, composition = [], pointPosition = 0):
+	def __init__(self, composition = [], pointPosition = 0, read = 0):
 		self.composition = composition
 		self.pointPosition = pointPosition
+		self.read = read
 
 class AutomatonFirstsSet(object):
     def __init__(self, firsts = []):
@@ -24,11 +25,16 @@ class ParsingTable(object):
     def __init__(self, states = {}):
         self.states = states
 
+class ValidItems(object):
+	def __init__(self, automatonProductions = {}, checked = 0, complete = 0):
+		self.automatonProductions = automatonProductions
+		self.checked = checked
+		self.complete = complete
+
 # It's a set of non-Terminal with compositions and productions
 automaton = {}   # Automaton.update({'A': 15})
 noTerminals = [] # noTerminals.append('A')
-
-
+validItems = []
 # It's a set of non-Terminal with first set
 automatonFirstsSet = {}
 
@@ -53,11 +59,11 @@ def makeGrammax(model):
 
 		if (count == 0):
 			noTerminals.append(lineAutomaton+'\'')
-			automaton.update({lineAutomaton+'\'': AutomatonArguments({1: lineAutomaton + ' $'}, 0)})
+			automaton.update({lineAutomaton+'\'': [AutomatonArguments({1: lineAutomaton + ' $'}, 0, 0)]})
 			count += 1
 
 		for lineComposition in lineCompositions:
-			arguments.append(AutomatonArguments(lineComposition.split(" "), 0))
+			arguments.append(AutomatonArguments(lineComposition.split(" "), 0, 0))
 
 		noTerminals.append(lineAutomaton)
 		automaton.update({lineAutomaton: arguments});
@@ -69,13 +75,29 @@ def makeGrammaxFollow():
     print "making follow"
 
 def makeValidItems():
+	for validItem in validItems:
+		if validItem.checked == 1:
+			continue
+
+		for composition in validItem.automatonProductions:
+			if composition.read == 1:
+				continue
+
+			if composition.arguments[composition.pointPosition] in noTerminals:
+
+			print composition
+
 	# We'll asume that the first state is the beginning state, so, we have to create the antecessor of the grammax
 	# print "making Valid Items"
 
 	# automaton[noTerminals[0]][0] = "." + automaton[noTerminals[0]][0].strip(" ")
-	for noTerminal in noTerminals:
-		print (noTerminal + ' ::= '),
-		print automaton[noTerminal]
+
+	# for noTerminal in noTerminals:
+		# print (noTerminal + ' ::= '),
+		# for automatonArguments in automaton[noTerminal]:
+			# print automatonArguments.pointPosition,
+
+		# print '\n'
 
 
 def makeGrammaxReductions():
@@ -89,14 +111,12 @@ file = open("grammax", "r")
 model = file.readlines()
 
 makeGrammax(model)
-makeValidItems()
-
 file.close()
 
-## Abertura e Leitura do arquivo referente a GLC da gramatica
+## Itens Validos da GLC
+validItems.append(ValidItems({noTerminals[0]: automaton[noTerminals[0]]}, 0, 0))
+makeValidItems()
 
 ## FIRST e FOLLOW da GLC da gramatica
-
-## Itens Validos da GLC
 
 ## Construcao da Tabela de Transicoes
