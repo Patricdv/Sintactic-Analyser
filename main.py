@@ -1,145 +1,165 @@
-class AutomatonArguments(object):
-	def __init__(self, composition = [], pointPosition = 0, read = 0):
-		self.composition = composition
-		self.pointPosition = pointPosition
-		self.read = read
-
-class ValidItems(object):
-	def __init__(self, automatonProductions = {}, checked = 0, complete = 0):
-		self.automatonProductions = automatonProductions
-		self.checked = checked
-		self.complete = complete
-
-class AutomatonFirstsSet(object):
-    def __init__(self, firsts = []):
-        self.firsts
-
-class AutomatonFollowsSet(object):
-    def __init__(self, follows = []):
-        self.follows
-
-class ParsingActions(object):
-    def __init__(self, action = '', transition = ''):
-        self.action = action
-        self.transition = transition
-
-class ParsingTable(object):
-    def __init__(self, states = {}):
-        self.states = states
-
 # It's a set of non-Terminal with compositions and productions
-automaton = {}  	# Automaton.update({'A': 15})
-noTerminals = [] 	# noTerminals.append('A')
+terminals = {}		# number: name
+nonTerminals = {} 	# number: name
+rules = {}			# number: name
 validItems = []  	# validItems.append(ValidItems())
-
-# It's a set of non-Terminal with first set and of non-Terminal with follow set
-automatonFirstsSet = {}
-automatonFollowsSet = {}
 
 # It's a set of valid items with it's compositions
 parsingTable = {}
+parseStates = []
+parseCompositions = []
 
-def makeGrammax(model):
-	count = 0
+# The Actual Parse State and last Read State to help's on the parsing table building
+actualParseState = 0
+readState = ''
+
+# The two control variables to sintatic analysis
+stack = [0]
+tape = []
+
+def ParsingAction(action, transition):
+	return {'action': action, 'transition': transition}
+
+def makeParsingTable(model):
+	global readState
 	for line in model:
-		line = line.replace("\r", "").replace("\n", "")
-		if "::=" not in line:
-			continue
-
-		line = line.split("::=")
-
-		lineAutomaton = line[0].strip(" ")
-		lineCompositions = line[1].split("|")
-		arguments = []
-
-		if (count == 0):
-			noTerminals.append(lineAutomaton+'\'')
-			automaton.update({lineAutomaton+'\'': [AutomatonArguments([lineAutomaton, '$'], 0, 0)]})
-			count += 1
-
-		for lineComposition in lineCompositions:
-			composition = lineComposition.strip().split(" ")
-			arguments.append(AutomatonArguments(composition, 0, 0))
-
-		noTerminals.append(lineAutomaton)
-		automaton.update({lineAutomaton: arguments});
-
-def iterateInTheDot(validItem):
-	altered = 0
-	for composition in validItem.automatonProductions.keys():
-		print composition
-		for production in validItem.automatonProductions[composition]:
-			if production.read == 1:
-				print "---------------------------------------"
-				print "producao lida"
+		if line and not line.isspace():
+			if readState == '' and 'Terminals' in line:
+				readState = 'terminals'
 				continue
 
-			print "Item: ",
-			print production.composition[production.pointPosition]
-			if not production.composition[production.pointPosition]:
-				print "---------------------------------------"
-				print "item completo"
-				production.read = 1
-				validItem.complete = 1
+			if readState == '':
 				continue
 
-			dotItem = production.composition[production.pointPosition]
-			if dotItem not in noTerminals:
+			if line == '========================================\n':
 				continue
 
-			if dotItem not in validItem.automatonProductions:
-				validItem.automatonProductions.update({dotItem: automaton[dotItem]})
-				production.read = 1
-				altered = 1
+			if readState == 'terminals' and 'Nonterminals' in line:
+				readState = 'nonterminals'
+				continue
 
-	print altered
-	if altered == 1:
-		iterateInTheDot(validItem)
+			if readState == 'terminals':
+				line = [x for x in line.replace("\r", "").replace("\n", "").split(" ") if x]
+				terminals.update({int(line[0]): line[1]})
 
-def makeValidItems():
-	for validItem in validItems:
-		if validItem.checked == 1:
-			continue
+			if readState == 'nonterminals' and 'Rules' in line:
+				readState = 'rules'
+				continue
 
-		iterateInTheDot(validItem)
-		print validItem.automatonProductions.keys()
+			if readState == 'nonterminals':
+				line = [x for x in line.replace("\r", "").replace("\n", "").split(" ") if x]
+				nonTerminals.update({int(line[0]): line[1]})
 
-	# We'll asume that the first state is the beginning state, so, we have to create the antecessor of the grammax
-	# print "making Valid Items"
+			if readState == 'rules' and 'LALR States' in line:
+				readState = 'lalr'
+				continue
 
-	# automaton[noTerminals[0]][0] = "." + automaton[noTerminals[0]][0].strip(" ")
+			if readState == 'rules':
+				line = [x for x in line.replace("\r", "").replace("\n", "").split(" ") if x]
+				number = int(line[0])
+				line.pop(0)
+				ruleNoTerminal = line[0]
+				line.pop(0)
+				line.pop(0)
+				rules.update({number: {'noTerminal': ruleNoTerminal, 'size': 2*len(line)}})
 
-	# for noTerminal in noTerminals:
-		# print (noTerminal + ' ::= '),
-		# for automatonArguments in automaton[noTerminal]:
-			# print automatonArguments.pointPosition,
+			if readState == 'lalr':
+				if 'State ' in line:
+					line = line.split(" ")
+					actualParseState = int(line[1])
+					parsingTable.update({actualParseState: {}})
+					continue
 
-		# print '\n'
+				if 'Prior States' in line:
+					#print line
+					continue
 
+				if '::=' not in line:
+					line = [x for x in line.replace("\r", "").replace("\n", "").split(" ") if x]
+					if len(line) == 2:
+						line.append('')
+					else:
+						line[2] = int(line[2])
 
-def makeGrammaxFirst():
-    print "making first"
+					parsingTable[actualParseState].update({line[0]: ParsingAction(line[1], line[2])})
 
-def makeGrammaxFollow():
-    print "making follow"
+def readTape(model):
+	global tape
+	for line in model:
+		tape += [x for x in line.replace("\r", "").replace("\n", "").split(" ") if x]
 
-def makeGrammaxReductions():
-    print "making grammax reductions"
+	tape.append('(EOF)')
 
-def makeGrammaxTransitions():
-    print "making grammax transitions"
+def syntaticRecognizement(stack, stackPosition, tape):
+	print '\n\n=================================================='
+	print stack
+	print '-------------------------------------------'
+	if stack[stackPosition] not in parsingTable.keys():
+		print "Error: State not recognized"
+		return False
+
+	if tape[0] not in parsingTable[stack[stackPosition]].keys():
+		print "Error: Invalid Entry"
+		return False
+
+	if parsingTable[stack[stackPosition]][tape[0]]['action'] == 's':
+		stack.append(tape[0])
+		stack.append(parsingTable[stack[stackPosition]][tape[0]]['transition'])
+		tape.pop(0)
+		stackPosition += 2
+		print stack
+		syntaticRecognizement(stack, stackPosition, tape)
+		return True
+
+	elif parsingTable[stack[stackPosition]][tape[0]]['action'] == 'r':
+		print 'Reducing'
+		print stack
+		print rules[parsingTable[stack[stackPosition]][tape[0]]['transition']]
+		size = rules[parsingTable[stack[stackPosition]][tape[0]]['transition']]['size']
+		newRule = rules[parsingTable[stack[stackPosition]][tape[0]]['transition']]['noTerminal']
+
+		print 'Size: ',
+		print size
+		print 'Rule: ',
+		print newRule
+		if size != 0:
+			for x in range(size):
+				stack.pop()
+			stackPosition = stackPosition - size
+
+		stack.append(newRule)
+		newPosition = parsingTable[stack[stackPosition]][newRule]['transition']
+		stack.append(newPosition)
+		stackPosition += 2
+		syntaticRecognizement(stack, stackPosition, tape)
+		return True
+
+	elif parsingTable[stack[stackPosition]][tape[0]]['action'] == 'a':
+		print "This entry is syntaticly right"
+		return True
+
 
 print "Open grammax File"
-file = open("grammax", "r")
+file = open("grammax.txt", "r")
 model = file.readlines()
 
-makeGrammax(model)
+makeParsingTable(model)
 file.close()
 
-## Itens Validos da GLC
-validItems.append(ValidItems({noTerminals[0]: automaton[noTerminals[0]]}, 0, 0))
-makeValidItems()
+print "Reading tape"
+file = open("tape", "r")
+model = file.readlines()
 
-## FIRST e FOLLOW da GLC da gramatica
+readTape(model)
+file.close()
 
-## Construcao da Tabela de Transicoes
+print 'Stack: ',
+print stack
+
+print 'Tape: ',
+print tape
+
+stackPosition = 0
+syntaticRecognizement(stack, stackPosition, tape)
+
+raw_input()
